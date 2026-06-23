@@ -98,6 +98,47 @@ static LRESULT CALLBACK wndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 	return 0;
 }
 
+static void PicoCalc_BuildPreviewFrame()
+{
+	memset(s_PicoCalcFrame, 0, sizeof(s_PicoCalcFrame));
+
+	for (int y = 0; y < DOOMGENERIC_RESY; ++y)
+	{
+		memcpy(
+			&s_PicoCalcFrame[(PICOCALC_DOOM_Y + y) * PICOCALC_SCREEN_W + PICOCALC_DOOM_X],
+			&DG_ScreenBuffer[y * DOOMGENERIC_RESX],
+			DOOMGENERIC_RESX * sizeof(uint32_t));
+	}
+}
+
+static void Win32_PresentPicoCalcFrame()
+{
+	StretchDIBits(
+		s_Hdc,
+		0, 0,
+		PICOCALC_SCREEN_W, PICOCALC_SCREEN_H,
+		0, 0,
+		PICOCALC_SCREEN_W, PICOCALC_SCREEN_H,
+		s_PicoCalcFrame,
+		&s_Bmi,
+		DIB_RGB_COLORS,
+		SRCCOPY);
+
+	SwapBuffers(s_Hdc);
+}
+
+static void Win32_PumpEvents()
+{
+	MSG msg;
+	memset(&msg, 0, sizeof(msg));
+
+	while (PeekMessageA(&msg, 0, 0, 0, PM_REMOVE) > 0)
+	{
+		TranslateMessage(&msg);
+		DispatchMessageA(&msg);
+	}
+}
+
 void DG_Init()
 {
 	// window creation
@@ -151,37 +192,9 @@ void DG_Init()
 
 void DG_DrawFrame()
 {
-	MSG msg;
-	memset(&msg, 0, sizeof(msg));
-
-	while (PeekMessageA(&msg, 0, 0, 0, PM_REMOVE) > 0)
-	{
-		TranslateMessage(&msg);
-		DispatchMessageA(&msg);
-	}
-
-	memset(s_PicoCalcFrame, 0, sizeof(s_PicoCalcFrame));
-
-	for (int y = 0; y < DOOMGENERIC_RESY; ++y)
-	{
-		memcpy(
-			&s_PicoCalcFrame[(PICOCALC_DOOM_Y + y) * PICOCALC_SCREEN_W + PICOCALC_DOOM_X],
-			&DG_ScreenBuffer[y * DOOMGENERIC_RESX],
-			DOOMGENERIC_RESX * sizeof(uint32_t));
-	}
-
-	StretchDIBits(
-		s_Hdc,
-		0, 0,
-		PICOCALC_SCREEN_W, PICOCALC_SCREEN_H,
-		0, 0,
-		PICOCALC_SCREEN_W, PICOCALC_SCREEN_H,
-		s_PicoCalcFrame,
-		&s_Bmi,
-		DIB_RGB_COLORS,
-		SRCCOPY);
-
-	SwapBuffers(s_Hdc);
+	Win32_PumpEvents();
+	PicoCalc_BuildPreviewFrame();
+	Win32_PresentPicoCalcFrame();
 }
 
 void DG_SleepMs(uint32_t ms)
