@@ -108,11 +108,17 @@ static uint32_t Win32_Rgb565ToRgb888(uint16_t color)
 	return (r << 16) | (g << 8) | b;
 }
 
-static void Win32_BuildPreviewFrame(const uint16_t* frame565)
+static void Win32_BuildPreviewFrame()
 {
-	for (int i = 0; i < PICOCALC_SCREEN_W * PICOCALC_SCREEN_H; ++i)
+	for (int y = 0; y < PICOCALC_SCREEN_H; ++y)
 	{
-		s_Win32PreviewFrame[i] = Win32_Rgb565ToRgb888(frame565[i]);
+		const uint16_t* src = PicoCalc_GetFrame565Row(y);
+		uint32_t* dst = &s_Win32PreviewFrame[y * PICOCALC_SCREEN_W];
+
+		for (int x = 0; x < PICOCALC_SCREEN_W; ++x)
+		{
+			dst[x] = Win32_Rgb565ToRgb888(src[x]);
+		}
 	}
 }
 
@@ -200,7 +206,7 @@ void DG_DrawFrame()
 	Win32_PumpEvents();
 
 	PicoCalc_BuildFrame565(DG_ScreenBuffer, DOOMGENERIC_RESX, DOOMGENERIC_RESY);
-	Win32_BuildPreviewFrame(PicoCalc_GetFrame565());
+	Win32_BuildPreviewFrame();
 
 	Win32_PresentPicoCalcFrame();
 }
