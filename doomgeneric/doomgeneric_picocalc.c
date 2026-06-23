@@ -2,27 +2,35 @@
 #include "doomgeneric.h"
 #include "picocalc_present.h"
 
+#include "pico/stdlib.h"
+#include "pico/time.h"
+
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
 static uint16_t s_PicoCalcSlab565[PICOCALC_SCREEN_W * PICOCALC_SLAB_ROWS];
 
 static void PicoCalc_PlatformInit(void)
 {
-	// TODO: Pico SDK init:
-	// - stdio / clocks
+	stdio_init_all();
+
+	// Give USB stdio a moment to enumerate when connected.
+	sleep_ms(1500);
+
+	printf("PicoCalc Doom backend init\n");
+
+	// TODO:
 	// - GPIO
 	// - SPI display
 	// - DMA
-	// - keyboard / input
-	// - storage / filesystem
+	// - keyboard/input
+	// - storage/filesystem
 }
 
 static void PicoCalc_PresentBeginFrame(void)
 {
-	// TODO: Optional hardware frame setup.
-	// For ILI9488-style display, this may eventually set a full-screen
-	// address window once per frame, or per slab depending on the driver.
+	// TODO: Optional display frame setup.
 }
 
 static void PicoCalc_PresentSlab565(int screenY, const uint16_t* pixels, int rows)
@@ -31,11 +39,10 @@ static void PicoCalc_PresentSlab565(int screenY, const uint16_t* pixels, int row
 	(void)pixels;
 	(void)rows;
 
-	// TODO: Hardware present path:
-	// - set address window: x=0, y=screenY, w=320, h=rows
-	// - byte-swap RGB565 if required by display/SPI path
-	// - start DMA transfer
-	// - wait or ping-pong slab buffers
+	// TODO:
+	// - set display address window
+	// - byte-swap if needed
+	// - DMA RGB565 slab to SPI
 }
 
 static void PicoCalc_PresentEndFrame(void)
@@ -77,18 +84,12 @@ void DG_DrawFrame(void)
 
 void DG_SleepMs(uint32_t ms)
 {
-	(void)ms;
-
-	// TODO: Pico SDK:
-	// sleep_ms(ms);
+	sleep_ms(ms);
 }
 
 uint32_t DG_GetTicksMs(void)
 {
-	// TODO: Pico SDK:
-	// return to_ms_since_boot(get_absolute_time());
-
-	return 0;
+	return (uint32_t)to_ms_since_boot(get_absolute_time());
 }
 
 int DG_GetKey(int* pressed, unsigned char* key)
@@ -103,14 +104,31 @@ int DG_GetKey(int* pressed, unsigned char* key)
 		*key = 0;
 	}
 
-	// Return 0 when no key event is available.
-	// Return 1 when an event has been written to *pressed and *key.
 	return 0;
 }
 
 void DG_SetWindowTitle(const char* title)
 {
 	(void)title;
+}
 
-	// No-op on PicoCalc.
+int main(void)
+{
+	static char* argv[] =
+	{
+		"doomgeneric",
+		"-iwad",
+		"doom.wad"
+	};
+
+	const int argc = (int)(sizeof(argv) / sizeof(argv[0]));
+
+	doomgeneric_Create(argc, argv);
+
+	while (1)
+	{
+		doomgeneric_Tick();
+	}
+
+	return 0;
 }
