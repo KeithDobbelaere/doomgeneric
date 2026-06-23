@@ -14,7 +14,8 @@
 #define PICOCALC_DOOM_Y   60
 
 static BITMAPINFO s_Bmi = { sizeof(BITMAPINFOHEADER), PICOCALC_SCREEN_W, -PICOCALC_SCREEN_H, 1, 32 };
-static uint32_t s_PicoCalcFrame[PICOCALC_SCREEN_W * PICOCALC_SCREEN_H];
+static uint16_t s_PicoCalcFrame565[PICOCALC_SCREEN_W * PICOCALC_SCREEN_H];
+static uint32_t s_Win32PreviewFrame[PICOCALC_SCREEN_W * PICOCALC_SCREEN_H];
 static HWND s_Hwnd = 0;
 static HDC s_Hdc = 0;
 
@@ -98,16 +99,51 @@ static LRESULT CALLBACK wndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 	return 0;
 }
 
+static uint16_t PicoCalc_Rgb888ToRgb565(uint32_t color)
+{
+	const uint8_t r = (uint8_t)((color >> 16) & 0xFF);
+	const uint8_t g = (uint8_t)((color >> 8) & 0xFF);
+	const uint8_t b = (uint8_t)(color & 0xFF);
+
+	return (uint16_t)(((r & 0xF8) << 8) |
+		((g & 0xFC) << 3) |
+		(b >> 3));
+}
+
+static uint32_t Win32_Rgb565ToRgb888(uint16_t color)
+{
+	uint32_t r = (color >> 11) & 0x1F;
+	uint32_t g = (color >> 5) & 0x3F;
+	uint32_t b = color & 0x1F;
+
+	r = (r << 3) | (r >> 2);
+	g = (g << 2) | (g >> 4);
+	b = (b << 3) | (b >> 2);
+
+	return (r << 16) | (g << 8) | b;
+}
+
 static void PicoCalc_BuildPreviewFrame()
 {
-	memset(s_PicoCalcFrame, 0, sizeof(s_PicoCalcFrame));
+	memset(s_PicoCalcFrame565, 0, sizeof(s_PicoCalcFrame565));
 
 	for (int y = 0; y < DOOMGENERIC_RESY; ++y)
 	{
-		memcpy(
-			&s_PicoCalcFrame[(PICOCALC_DOOM_Y + y) * PICOCALC_SCREEN_W + PICOCALC_DOOM_X],
-			&DG_ScreenBuffer[y * DOOMGENERIC_RESX],
-			DOOMGENERIC_RESX * sizeof(uint32_t));
+		const uint32_t* src = &DG_ScreenBuffer[y * DOOMGENERIC_RESX];
+		uint16_t* dst = &s_PicoCalcFrame565[(PICOCALC_DOOM_Y + y) * PICOCALC_SCREEN_W + PICOCALC_DOOM_X];
+
+		for (int x = 0; x < DOOMGENERIC_RESX; ++x)
+		{
+			dst[x] = PicoCalc_Rgb888ToRgb565(src[x]);
+		}
+	}
+}
+
+static void Win32_BuildPreviewFrame()
+{
+	for (int i = 0; i < PICOCALC_SCREEN_W * PICOCALC_SCREEN_H; ++i)
+	{
+		s_Win32PreviewFrame[i] = Win32_Rgb565ToRgb888(s_PicoCalcFrame565[i]);
 	}
 }
 
@@ -119,7 +155,7 @@ static void Win32_PresentPicoCalcFrame()
 		PICOCALC_SCREEN_W, PICOCALC_SCREEN_H,
 		0, 0,
 		PICOCALC_SCREEN_W, PICOCALC_SCREEN_H,
-		s_PicoCalcFrame,
+		s_Win32PreviewFrame,
 		&s_Bmi,
 		DIB_RGB_COLORS,
 		SRCCOPY);
@@ -194,6 +230,7 @@ void DG_DrawFrame()
 {
 	Win32_PumpEvents();
 	PicoCalc_BuildPreviewFrame();
+	Win32_BuildPreviewFrame();
 	Win32_PresentPicoCalcFrame();
 }
 
