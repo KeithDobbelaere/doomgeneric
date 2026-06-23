@@ -192,6 +192,7 @@
     <ClCompile Include="m_menu.c" />
     <ClCompile Include="m_misc.c" />
     <ClCompile Include="m_random.c" />
+    <ClCompile Include="picocalc_present.c" />
     <ClCompile Include="p_ceilng.c" />
     <ClCompile Include="p_doors.c" />
     <ClCompile Include="p_enemy.c" />
@@ -297,6 +298,7 @@
     <ClInclude Include="net_query.h" />
     <ClInclude Include="net_sdl.h" />
     <ClInclude Include="net_server.h" />
+    <ClInclude Include="picocalc_present.h" />
     <ClInclude Include="p_inter.h" />
     <ClInclude Include="p_local.h" />
     <ClInclude Include="p_mobj.h" />

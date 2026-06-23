@@ -264,6 +264,9 @@
     <ClCompile Include="i_video.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="picocalc_present.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="am_map.h">
@@ -552,6 +555,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="doomgeneric.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="picocalc_present.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
