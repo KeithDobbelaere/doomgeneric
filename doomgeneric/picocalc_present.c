@@ -34,24 +34,78 @@ const uint16_t* PicoCalc_GetFrame565Row(int y)
 	return &s_PicoCalcFrame565[y * PICOCALC_SCREEN_W];
 }
 
-void PicoCalc_BuildFrame565(const uint32_t* doomFrame, int doomW, int doomH)
+void PicoCalc_BuildSlab565(
+	uint16_t* dst,
+	int dstY,
+	int slabRows,
+	const uint32_t* doomFrame,
+	int doomW,
+	int doomH)
 {
-	memset(s_PicoCalcFrame565, 0, sizeof(s_PicoCalcFrame565));
-
-	const int maxCopyW = PICOCALC_SCREEN_W - PICOCALC_DOOM_X;
-	const int maxCopyH = PICOCALC_SCREEN_H - PICOCALC_DOOM_Y;
-
-	const int copyW = doomW < maxCopyW ? doomW : maxCopyW;
-	const int copyH = doomH < maxCopyH ? doomH : maxCopyH;
-
-	for (int y = 0; y < copyH; ++y)
+	if (!dst || !doomFrame || doomW <= 0 || doomH <= 0 || slabRows <= 0)
 	{
-		const uint32_t* src = &doomFrame[y * doomW];
-		uint16_t* dst = &s_PicoCalcFrame565[(PICOCALC_DOOM_Y + y) * PICOCALC_SCREEN_W + PICOCALC_DOOM_X];
+		return;
+	}
+
+	memset(dst, 0, (size_t)PICOCALC_SCREEN_W * (size_t)slabRows * sizeof(uint16_t));
+
+	const int doomAreaTop = PICOCALC_DOOM_Y;
+	const int doomAreaBottom = PICOCALC_DOOM_Y + doomH;
+
+	const int slabTop = dstY;
+	const int slabBottom = dstY + slabRows;
+
+	if (slabBottom <= doomAreaTop || slabTop >= doomAreaBottom)
+	{
+		return;
+	}
+
+	const int copyW = doomW < (PICOCALC_SCREEN_W - PICOCALC_DOOM_X)
+		? doomW
+		: (PICOCALC_SCREEN_W - PICOCALC_DOOM_X);
+
+	for (int localY = 0; localY < slabRows; ++localY)
+	{
+		const int screenY = dstY + localY;
+		const int doomY = screenY - PICOCALC_DOOM_Y;
+
+		if (screenY < 0 || screenY >= PICOCALC_SCREEN_H)
+		{
+			continue;
+		}
+
+		if (doomY < 0 || doomY >= doomH)
+		{
+			continue;
+		}
+
+		const uint32_t* src = &doomFrame[doomY * doomW];
+		uint16_t* rowDst = &dst[localY * PICOCALC_SCREEN_W + PICOCALC_DOOM_X];
 
 		for (int x = 0; x < copyW; ++x)
 		{
-			dst[x] = PicoCalc_Rgb888ToRgb565(src[x]);
+			rowDst[x] = PicoCalc_Rgb888ToRgb565(src[x]);
 		}
+	}
+}
+
+void PicoCalc_BuildFrame565(const uint32_t* doomFrame, int doomW, int doomH)
+{
+	for (int y = 0; y < PICOCALC_SCREEN_H; y += PICOCALC_SLAB_ROWS)
+	{
+		int rows = PICOCALC_SLAB_ROWS;
+
+		if (y + rows > PICOCALC_SCREEN_H)
+		{
+			rows = PICOCALC_SCREEN_H - y;
+		}
+
+		PicoCalc_BuildSlab565(
+			&s_PicoCalcFrame565[y * PICOCALC_SCREEN_W],
+			y,
+			rows,
+			doomFrame,
+			doomW,
+			doomH);
 	}
 }
