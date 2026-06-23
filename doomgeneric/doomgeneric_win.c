@@ -3,10 +3,18 @@
 #include "doomgeneric.h"
 
 #include <stdio.h>
+#include <string.h>
+#include <ctype.h>
 
 #include <Windows.h>
 
-static BITMAPINFO s_Bmi = { sizeof(BITMAPINFOHEADER), DOOMGENERIC_RESX, -DOOMGENERIC_RESY, 1, 32 };
+#define PICOCALC_SCREEN_W 320
+#define PICOCALC_SCREEN_H 320
+#define PICOCALC_DOOM_X   0
+#define PICOCALC_DOOM_Y   60
+
+static BITMAPINFO s_Bmi = { sizeof(BITMAPINFOHEADER), PICOCALC_SCREEN_W, -PICOCALC_SCREEN_H, 1, 32 };
+static uint32_t s_PicoCalcFrame[PICOCALC_SCREEN_W * PICOCALC_SCREEN_H];
 static HWND s_Hwnd = 0;
 static HDC s_Hdc = 0;
 
@@ -119,8 +127,8 @@ void DG_Init()
 
 	RECT rect;
 	rect.left = rect.top = 0;
-	rect.right = DOOMGENERIC_RESX;
-	rect.bottom = DOOMGENERIC_RESY;
+	rect.right = PICOCALC_SCREEN_W;
+	rect.bottom = PICOCALC_SCREEN_H;
 	AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, FALSE);
 
 	HWND hwnd = CreateWindowExA(0, windowClassName, windowTitle, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top, 0, 0, 0, 0);
@@ -152,7 +160,26 @@ void DG_DrawFrame()
 		DispatchMessageA(&msg);
 	}
 
-	StretchDIBits(s_Hdc, 0, 0, DOOMGENERIC_RESX, DOOMGENERIC_RESY, 0, 0, DOOMGENERIC_RESX, DOOMGENERIC_RESY, DG_ScreenBuffer, &s_Bmi, 0, SRCCOPY);
+	memset(s_PicoCalcFrame, 0, sizeof(s_PicoCalcFrame));
+
+	for (int y = 0; y < DOOMGENERIC_RESY; ++y)
+	{
+		memcpy(
+			&s_PicoCalcFrame[(PICOCALC_DOOM_Y + y) * PICOCALC_SCREEN_W + PICOCALC_DOOM_X],
+			&DG_ScreenBuffer[y * DOOMGENERIC_RESX],
+			DOOMGENERIC_RESX * sizeof(uint32_t));
+	}
+
+	StretchDIBits(
+		s_Hdc,
+		0, 0,
+		PICOCALC_SCREEN_W, PICOCALC_SCREEN_H,
+		0, 0,
+		PICOCALC_SCREEN_W, PICOCALC_SCREEN_H,
+		s_PicoCalcFrame,
+		&s_Bmi,
+		DIB_RGB_COLORS,
+		SRCCOPY);
 
 	SwapBuffers(s_Hdc);
 }
