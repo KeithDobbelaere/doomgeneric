@@ -1,0 +1,14 @@
+PicoCalc backend notes
+
+doomgeneric_win.c and doomgeneric_picocalc.c both implement the DG_* platform API.
+
+Do not link both into the same executable.
+
+Windows preview target:
+- doomgeneric_win.c
+- picocalc_present.c
+
+Future PicoCalc target:
+- doomgeneric_picocalc.c
+- picocalc_present.c
+- Pico SDK display/input/storage files
